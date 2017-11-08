@@ -14,6 +14,9 @@ import sys
 
 if sys.version_info[0] == 3:
     xrange = range
+    string_types = (str, )
+else:
+    string_types = (str, unicode)
 
 
 class ConsistentHash(object):
@@ -55,7 +58,7 @@ class ConsistentHash(object):
                 self.weights.update(objects.copy())
             elif isinstance(objects, list):
                 self.nodes.extend(objects[:])
-            elif isinstance(objects, str):
+            elif isinstance(objects, string_types):
                 self.nodes.extend(objects)
             elif objects is None:
                 pass
