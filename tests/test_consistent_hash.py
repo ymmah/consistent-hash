@@ -18,15 +18,17 @@ ConsistentHash.interleave_count = 1000
 
 
 class TestConsistentHash(unittest.TestCase):
-    init_nodes = {'192.168.0.101:11212': 1,
-                  '192.168.0.102:11212': 1,
-                  '192.168.0.103:11212': 1,
-                  '192.168.0.104:11212': 1}
+    init_nodes = {
+        '192.168.0.101:11212': 1,
+        '192.168.0.102:11212': 1,
+        '192.168.0.103:11212': 1,
+        '192.168.0.104:11212': 1,
+    }
     obj_nums = 10000
 
     @classmethod
     def setup_class(cls):
-        cls.objs = cls.gen_random_objs()
+        cls.objects = cls.generate_random_objects()
         print('Initial nodes {nodes}'.format(nodes=cls.init_nodes))
 
     @classmethod
@@ -42,7 +44,7 @@ class TestConsistentHash(unittest.TestCase):
     def test___init__(self):
         self.con_hash = ConsistentHash(self.init_nodes)
         # Get nodes from hashing ring
-        for obj in self.objs:
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
             self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
         distribution = self.show_nodes_balance()
@@ -56,16 +58,15 @@ class TestConsistentHash(unittest.TestCase):
 
     def test_empty__init__(self):
         self.con_hash = ConsistentHash()
-        for obj in self.objs:
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
 
             if node is not None:
-                raise Exception("Should have received an exception \
-                                 when hashing using an empty LUT")
+                raise AssertionError('Should have received an exception when hashing using an empty LUT')
 
         self.con_hash.add_nodes(self.init_nodes)
 
-        for obj in self.objs:
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
             self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
 
@@ -75,7 +76,7 @@ class TestConsistentHash(unittest.TestCase):
             '192.168.0.101:11212': (23, 27),
             '192.168.0.102:11212': (23, 27),
             '192.168.0.103:11212': (23, 27),
-            '192.168.0.104:11212': (23, 27)
+            '192.168.0.104:11212': (23, 27),
         })
 
     def test_add_nodes(self):
@@ -84,7 +85,7 @@ class TestConsistentHash(unittest.TestCase):
         add_nodes = {'192.168.0.105:11212': 1}
         self.con_hash.add_nodes(add_nodes)
         # Get nodes from hashing ring
-        for obj in self.objs:
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
             self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
         distribution = self.show_nodes_balance()
@@ -94,7 +95,7 @@ class TestConsistentHash(unittest.TestCase):
             '192.168.0.102:11212': (17, 23),
             '192.168.0.104:11212': (17, 23),
             '192.168.0.101:11212': (17, 23),
-            '192.168.0.103:11212': (17, 23)
+            '192.168.0.103:11212': (17, 23),
         })
         print('->The {nodes} added!!!'.format(nodes=add_nodes))
 
@@ -103,13 +104,13 @@ class TestConsistentHash(unittest.TestCase):
             u'192.168.0.101:11212': 1,
             u'192.168.0.102:11212': 1,
             u'192.168.0.103:11212': 1,
-            u'192.168.0.104:11212': 1
+            u'192.168.0.104:11212': 1,
         })
         # Add nodes to hashing ring
         add_nodes = u'192.168.0.105:11212'
         self.con_hash.add_nodes(add_nodes)
         # Get nodes from hashing ring
-        for obj in self.objs:
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
             self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
         distribution = self.show_nodes_balance()
@@ -119,7 +120,28 @@ class TestConsistentHash(unittest.TestCase):
             '192.168.0.102:11212': (17, 23),
             '192.168.0.104:11212': (17, 23),
             '192.168.0.101:11212': (17, 23),
-            '192.168.0.103:11212': (17, 23)
+            '192.168.0.103:11212': (17, 23),
+        })
+        print('->The {nodes} added!!!'.format(nodes=add_nodes))
+
+    def test_add_nodes_tuple(self):
+        self.con_hash = ConsistentHash(self.init_nodes)
+        # Add nodes to hashing ring
+        add_nodes = ('192.168.0.105:11212', '192.168.0.106:11212')
+        self.con_hash.add_nodes(add_nodes)
+        # Get nodes from hashing ring
+        for obj in self.objects:
+            node = self.con_hash.get_node(obj)
+            self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
+        distribution = self.show_nodes_balance()
+
+        self.validate_distribution(distribution, {
+            '192.168.0.106:11212': (15, 17),
+            '192.168.0.105:11212': (15, 17),
+            '192.168.0.102:11212': (15, 17),
+            '192.168.0.104:11212': (15, 17),
+            '192.168.0.101:11212': (15, 17),
+            '192.168.0.103:11212': (15, 17),
         })
         print('->The {nodes} added!!!'.format(nodes=add_nodes))
 
@@ -130,7 +152,25 @@ class TestConsistentHash(unittest.TestCase):
         # Delete the nodes from hashing ring
         self.con_hash.del_nodes(del_nodes)
         # Get nodes from hashing ring after deleting
-        for obj in self.objs:
+        for obj in self.objects:
+            node = self.con_hash.get_node(obj)
+            self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
+        distribution = self.show_nodes_balance()
+
+        self.validate_distribution(distribution, {
+            '192.168.0.101:11212': (48, 52),
+            '192.168.0.103:11212': (48, 52)
+        })
+        print('->The {nodes} deleted!!!'.format(nodes=del_nodes))
+
+    def test_del_nodes_tuple(self):
+        self.con_hash = ConsistentHash(self.init_nodes)
+        # del_nodes = self.nodes[0:2]
+        del_nodes = ('192.168.0.102:11212', '192.168.0.104:11212')
+        # Delete the nodes from hashing ring
+        self.con_hash.del_nodes(del_nodes)
+        # Get nodes from hashing ring after deleting
+        for obj in self.objects:
             node = self.con_hash.get_node(obj)
             self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
         distribution = self.show_nodes_balance()
@@ -145,30 +185,31 @@ class TestConsistentHash(unittest.TestCase):
     def show_nodes_balance(self):
         distribution = {}
         print('-' * 67)
-        print('Nodes count:{nNodes} Objects count:{nObjs}'.format(
+        print('Nodes count:{nNodes} Objects count:{nObjects}'.format(
             nNodes=self.con_hash.get_nodes_cnt(),
-            nObjs=len(self.objs)
+            nObjects=len(self.objects)
         ))
         print('-' * 27 + 'Nodes balance' + '-' * 27)
 
         for node in self.con_hash.get_all_nodes():
             substitutions = {
                 'nNodes': node,
-                'nObjs': self.hit_nums[node],
+                'nObjects': self.hit_nums[node],
                 'percentage': self.get_percent(self.hit_nums[node], self.obj_nums)
             }
 
-            print('Nodes:{nNodes} \
-                   - Objects count:{nObjs} \
+            print('Nodes: {nNodes} \
+                   - Objects count: {nObjects} \
                    - percent:{percentage}%'.format(**substitutions))
 
             distribution[node] = substitutions['percentage']
 
         return distribution
 
-    def validate_distribution(self, actual, expected):
+    @staticmethod
+    def validate_distribution(actual, expected):
         if expected.keys() != actual.keys():
-            raise Exception("Expected nodes does not match actual nodes")
+            raise AssertionError('Expected nodes does not match actual nodes')
 
         for i in expected.keys():
             actual_value = actual[i]
@@ -177,19 +218,26 @@ class TestConsistentHash(unittest.TestCase):
 
             if actual_value < min_value or actual_value > max_value:
                 print(min_value, actual_value, max_value)
-                raise Exception("Value outside of expected range")
+                raise AssertionError(
+                    'Value {actual} outside of expected range ({expected1},{expected2})'.format(
+                        expected1=min_value,
+                        expected2=max_value,
+                        actual=actual_value,
+                    )
+                )
 
-        print("Validated ranges")
+        print('Validated ranges')
 
-    def get_percent(self, num, sum):
-        return int(float(num) / sum * 100)
+    @staticmethod
+    def get_percent(numerator, denominator):
+        return int(float(numerator) / denominator * 100)
 
-    @classmethod
-    def gen_random_objs(cls, num=10000, len=10):
-        objs = []
+    @staticmethod
+    def generate_random_objects(num=10000, length=10):
+        objects = []
         for i in range(num):
-            objs.append(''.join([random.choice(chars) for _ in range(len)]))
-        return objs
+            objects.append(''.join([random.choice(chars) for _ in range(length)]))
+        return objects
 
     def test_sample_hash_output(self):
         ConsistentHash.interleave_count = 40
@@ -219,10 +267,10 @@ class TestConsistentHash(unittest.TestCase):
         }
 
         hash_ring = ConsistentHash(objects=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'])
-        for input, output in samples.items():
-            result = hash_ring.get_node(input)
+        for node, output in samples.items():
+            result = hash_ring.get_node(node)
             if result != output:
-                raise Exception('Expected node does not match actual node. Expected: {}. Got: {}'.format(
+                raise AssertionError('Expected node does not match actual node. Expected: {}. Got: {}'.format(
                         output,
                         result,
                     )
