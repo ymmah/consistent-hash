@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import unittest
+
 import random
 import string
 import sys
@@ -15,7 +17,7 @@ else:
 ConsistentHash.interleave_count = 1000
 
 
-class TestConsistentHash:
+class TestConsistentHash(unittest.TestCase):
     init_nodes = {'192.168.0.101:11212': 1,
                   '192.168.0.102:11212': 1,
                   '192.168.0.103:11212': 1,
@@ -96,6 +98,31 @@ class TestConsistentHash:
         })
         print('->The {nodes} added!!!'.format(nodes=add_nodes))
 
+    def test_add_nodes_unicode(self):
+        self.con_hash = ConsistentHash({
+            u'192.168.0.101:11212': 1,
+            u'192.168.0.102:11212': 1,
+            u'192.168.0.103:11212': 1,
+            u'192.168.0.104:11212': 1
+        })
+        # Add nodes to hashing ring
+        add_nodes = u'192.168.0.105:11212'
+        self.con_hash.add_nodes(add_nodes)
+        # Get nodes from hashing ring
+        for obj in self.objs:
+            node = self.con_hash.get_node(obj)
+            self.hit_nums[node] = self.hit_nums.get(node, 0) + 1
+        distribution = self.show_nodes_balance()
+
+        self.validate_distribution(distribution, {
+            '192.168.0.105:11212': (17, 23),
+            '192.168.0.102:11212': (17, 23),
+            '192.168.0.104:11212': (17, 23),
+            '192.168.0.101:11212': (17, 23),
+            '192.168.0.103:11212': (17, 23)
+        })
+        print('->The {nodes} added!!!'.format(nodes=add_nodes))
+
     def test_del_nodes(self):
         self.con_hash = ConsistentHash(self.init_nodes)
         # del_nodes = self.nodes[0:2]
@@ -128,8 +155,7 @@ class TestConsistentHash:
             substitutions = {
                 'nNodes': node,
                 'nObjs': self.hit_nums[node],
-                'percentage': self.get_percent(self.hit_nums[node],
-                                               self.obj_nums)
+                'percentage': self.get_percent(self.hit_nums[node], self.obj_nums)
             }
 
             print('Nodes:{nNodes} \
@@ -162,7 +188,7 @@ class TestConsistentHash:
     def gen_random_objs(cls, num=10000, len=10):
         objs = []
         for i in range(num):
-            objs.append(''.join([random.choice(chars) for i in range(len)]))
+            objs.append(''.join([random.choice(chars) for _ in range(len)]))
         return objs
 
     def test_sample_hash_output(self):
