@@ -52,21 +52,17 @@ class ConsistentHash(object):
         self.add_nodes(objects)
 
     def _ingest_objects(self, objects):
-        try:
-            if isinstance(objects, dict):
-                self.nodes.extend(objects.keys())
-                self.weights.update(objects.copy())
-            elif isinstance(objects, list):
-                self.nodes.extend(objects[:])
-            elif isinstance(objects, string_types):
-                self.nodes.extend(objects)
-            elif objects is None:
-                pass
-            else:
-                raise TypeError("The arguments of nodes must be dict,\
-                        list or string.")
-        except TypeError:
-            traceback.print_exc(file=sys.stdout)
+        if isinstance(objects, dict):
+            self.nodes.extend(objects.keys())
+            self.weights.update(objects.copy())
+        elif isinstance(objects, list):
+            self.nodes.extend(objects[:])
+        elif isinstance(objects, string_types):
+            self.nodes.append(objects)
+        elif objects is None:
+            pass
+        else:
+            raise TypeError("The arguments of nodes must be dict, list or string.")
 
     def add_nodes(self, nodes):
         """
@@ -160,8 +156,7 @@ class ConsistentHash(object):
 
     def get_all_nodes(self):
         # Sorted with ascend
-        return sorted(self.nodes,
-                      key=lambda node: list(map(int, re.split('\W', node))))
+        return sorted(self.nodes, key=lambda node: list(map(int, re.split('\W', node))))
 
     def get_nodes_cnt(self):
         return len(self.nodes)
