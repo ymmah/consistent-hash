@@ -62,7 +62,7 @@ class ConsistentHash(object):
         elif objects is None:
             pass
         else:
-            raise TypeError("The arguments of nodes must be dict, list or string.")
+            raise TypeError('The arguments of nodes must be dict, list or string. Got {}'.format(type(objects)))
 
     def add_nodes(self, nodes):
         """
