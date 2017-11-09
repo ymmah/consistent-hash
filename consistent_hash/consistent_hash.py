@@ -6,7 +6,6 @@
 # the Free Software Foundation, either version 3 of the License, or (at
 # your option) any later version.
 
-import traceback
 import hashlib
 import bisect
 import re
@@ -55,14 +54,20 @@ class ConsistentHash(object):
         if isinstance(objects, dict):
             self.nodes.extend(objects.keys())
             self.weights.update(objects.copy())
-        elif isinstance(objects, list):
+        elif isinstance(objects, (list, tuple)):
             self.nodes.extend(objects[:])
         elif isinstance(objects, string_types):
             self.nodes.append(objects)
         elif objects is None:
             pass
         else:
-            raise TypeError('The arguments of nodes must be dict, list or string. Got {}'.format(type(objects)))
+            raise TypeError(
+                'The argument of add_nodes must be a dict, list, tuple, or string. '
+                'Got type "{type}", value:\n{value}'.format(
+                    type=type(objects).__name__,
+                    value=objects,
+                )
+            )
 
     def add_nodes(self, nodes):
         """
@@ -93,11 +98,14 @@ class ConsistentHash(object):
         Nodes is expected to be a list of nodes already
         present in the ring.
         """
-        try:
-            if not isinstance(nodes, list):
-                raise TypeError("The arguments of nodes must be list.")
-        except TypeError:
-            traceback.print_exc(file=sys.stdout)
+        if not isinstance(nodes, (list, tuple)):
+            raise TypeError(
+                'The argument of del_nodes must be a list or tuple. '
+                'Got type "{type}", value:\n{value}'.format(
+                    type=type(nodes).__name__,
+                    value=nodes,
+                )
+            )
 
         # Delete nodes from the ring.
         for node in nodes:
@@ -170,7 +178,8 @@ class ConsistentHash(object):
         b_key = self._hash_digest(key)
         return self._hash_val(b_key, lambda x: x)
 
-    def _hash_val(self, b_key, entry_fn):
+    @staticmethod
+    def _hash_val(b_key, entry_fn):
         """Imagine keys from 0 to 2^32 mapping to a ring,
         so we divide 4 bytes of 16 bytes md5 into a group.
         """
@@ -180,16 +189,13 @@ class ConsistentHash(object):
                 b_key[entry_fn(0)])
 
     def _hash_digest(self, key):
-        key = key.encode() if sys.version_info[0] == 3 \
-            and isinstance(key, str) else key
+        key = key.encode() if sys.version_info[0] == 3 and isinstance(key, str) else key
 
         if self.hasher is not None:
-            res = [x if isinstance(x, int) else ord(x)
-                   for x in self.hasher(key)]
+            res = [x if isinstance(x, int) else ord(x) for x in self.hasher(key)]
         else:
             m = hashlib.md5()
             m.update(key)
-            res = [x if isinstance(x, int) else ord(x)
-                   for x in m.digest()]
+            res = [x if isinstance(x, int) else ord(x) for x in m.digest()]
 
         return res
